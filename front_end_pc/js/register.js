@@ -1,3 +1,16 @@
+// 在 register.js 最前面添加
+window.addEventListener('error', function (e) {
+    console.log('全局错误捕获:', e);
+    console.log('错误信息:', e.message);
+    console.log('错误文件:', e.filename);
+    console.log('错误行号:', e.lineno);
+});
+
+window.addEventListener('unhandledrejection', function (e) {
+    console.log('未处理的 Promise 拒绝:', e);
+    console.log('原因:', e.reason);
+});
+
 var vm = new Vue({
     el: '#app',
     data: {
@@ -33,6 +46,7 @@ var vm = new Vue({
             } else {
                 this.error_name = false;
             }
+            /*
             // 检查重名
             if (this.error_name == false) {
                 axios.get(this.host + '/usernames/' + this.username + '/count/', {
@@ -50,6 +64,7 @@ var vm = new Vue({
                         console.log(error.response.data);
                     })
             }
+             */
         },
         check_pwd: function () {
             var len = this.password.length;
@@ -75,7 +90,7 @@ var vm = new Vue({
                 this.error_phone_message = '您输入的手机号格式不正确';
                 this.error_phone = true;
             }
-            if (this.error_phone == false) {
+            /*if (this.error_phone == false) {
                 axios.get(this.host + '/mobiles/' + this.mobile + '/count/', {
                     responseType: 'json'
                 })
@@ -90,7 +105,7 @@ var vm = new Vue({
                     .catch(error => {
                         console.log(error.response.data);
                     })
-            }
+            }*/
         },
         check_sms_code: function () {
             if (!this.sms_code) {
@@ -109,55 +124,77 @@ var vm = new Vue({
 
         // 发送短信验证码
         send_sms_code: function () {
-            if (this.sending_flag == true) {
-                return;
-            }
-            this.sending_flag = true;
+            console.log('1. 开始执行');
 
-            // 校验参数，保证输入框有数据填写
-            this.check_phone();
+            try {
+                if (this.sending_flag == true) {
+                    console.log('1.1 正在发送中，直接返回');
+                    return;
+                }
+                this.sending_flag = true;
+                console.log('2. 设置 sending_flag = true');
 
-            if (this.error_phone == true) {
-                this.sending_flag = false;
-                return;
-            }
+                // 校验参数，保证输入框有数据填写
+                this.check_phone();
+                console.log('3. 手机号验证完成, error_phone:', this.error_phone);
 
-            // 向后端接口发送请求，让后端发送短信验证码
-            // axios.get('http://127.0.0.1:8000' + '/sms_codes/' + this.mobile + '/', {
-            // axios.get('http://api.meiduo.site:8000' + '/sms_codes/' + this.mobile + '/', {
-            axios.get(this.host + '/sms_codes/' + this.mobile + '/', {
-                responseType: 'json'
-            })
-                .then(response => {
-                    // 表示后端发送短信成功
-                    // 倒计时60秒，60秒后允许用户再次点击发送短信验证码的按钮
-                    var num = 60;
-                    // 设置一个计时器
-                    var t = setInterval(() => {
-                        if (num == 1) {
-                            // 如果计时器到最后, 清除计时器对象
-                            clearInterval(t);
-                            // 将点击获取验证码的按钮展示的文本回复成原始文本
-                            this.sms_code_tip = '获取短信验证码';
-                            // 将点击按钮的onclick事件函数恢复回去
-                            this.sending_flag = false;
-                        } else {
-                            num -= 1;
-                            // 展示倒计时信息
-                            this.sms_code_tip = num + '秒';
-                        }
-                    }, 1000, 60)
-                })
-                .catch(error => {
-                    if (error.response.status == 400) {
-                        // 展示发送短信错误提示
-                        this.error_sms_code = true;
-                        this.error_sms_code_message = error.response.data.message;
-                    } else {
-                        console.log(error.response.data);
-                    }
+                if (this.error_phone == true) {
+                    console.log('3.1 手机号验证失败，返回');
                     this.sending_flag = false;
+                    return;
+                }
+
+                var requestUrl = this.host + '/sms_codes/' + this.mobile + '/';
+                console.log('4. 准备发送请求到:', requestUrl);
+
+                // 添加更详细的错误处理
+                axios.get(requestUrl, {
+                    responseType: 'json',
+                    timeout: 10000 // 添加超时设置
                 })
+                    .then(response => {
+                        console.log('5. 请求成功，响应数据:', response.data);
+                        // 表示后端发送短信成功
+                        var num = 60;
+                        var t = setInterval(() => {
+                            if (num == 1) {
+                                clearInterval(t);
+                                this.sms_code_tip = '获取短信验证码';
+                                console.log('6. 倒计时结束');
+                                this.sending_flag = false;
+                            } else {
+                                num -= 1;
+                                this.sms_code_tip = num + '秒';
+                            }
+                        }, 1000)
+                    })
+                    .catch(error => {
+                        console.log('=== 请求失败详情 ===');
+                        console.log('错误完整对象:', error);
+                        console.log('错误类型:', typeof error);
+                        console.log('错误名称:', error.name);
+                        console.log('错误消息:', error.message);
+
+                        if (error.response) {
+                            console.log('服务器响应错误:');
+                            console.log('- 状态码:', error.response.status);
+                            console.log('- 响应数据:', error.response.data);
+                        } else if (error.request) {
+                            console.log('网络请求错误:');
+                            console.log('- 请求对象:', error.request);
+                        } else {
+                            console.log('其他错误:', error.message);
+                        }
+
+                        this.sending_flag = false;
+                        console.log('设置 sending_flag = false');
+                    })
+            } catch (e) {
+                console.log('=== 代码执行异常 ===');
+                console.log('异常:', e);
+                console.log('异常栈:', e.stack);
+                this.sending_flag = false;
+            }
         },
 // 注册
         on_submit: function () {

@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os, sys
 from pathlib import Path
+from ..apps import users
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
+sys.path.insert(0, BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -25,7 +28,9 @@ SECRET_KEY = 'django-insecure-a#qdo5i3=ir+e7libar_((r6vso_my1an1vm_1!%mrbv@pnyx8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1','localhost','api.meiduo.site',
+    'www.meiduo.site',
+    'meiduo.site',]
 
 # Application definition
 
@@ -38,9 +43,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'users.apps.UsersConfig',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -194,3 +201,13 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'users.User'
+
+CORS_ORIGIN_WHITELIST = (
+    'https://127.0.0.1:8000',
+    'https://localhost:8000',
+    "http://localhost:63342",
+    "http://127.0.0.1:63342",
+    "http://api.meiduo.site:8080",
+    "http://www.meiduo.site",
+)
+CORS_ALLOW_CREDENTIALS = True
